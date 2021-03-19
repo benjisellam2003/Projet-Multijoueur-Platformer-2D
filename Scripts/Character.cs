@@ -2,21 +2,32 @@
 
 namespace Assets.Scenes
 {
-    class Character
+    abstract class Character
     {
-        GameObject _characterObject;
+        // Champs
+        GameObject _characterObject; // GameObject du personnage
 
-        KeyCode _leftKey;
-        KeyCode _rightKey;
-        KeyCode _jumpKey;
-        KeyCode _attackKey;
-        KeyCode _actionKey;
+        KeyCode _leftKey; // Touche de gauche
+        KeyCode _rightKey; // Touche de droite
+        KeyCode _jumpKey; // Touche de saut
+        KeyCode _attackKey; // Touche d'attaque
+        KeyCode _actionKey; // Touche d'action
 
-        int _hp;
-        int _strength;
+        int _hp = 100; // Nombre de points de vie
 
-        const int SPEED = 1;
+        int _strength; // Dégats infligés à chaque attaque
 
+        const int _DEFAULT_SPEED = 12; // Vitesse de déplacement par défaut
+        float _currentSpeed = DEFAULT_SPEED; // Vitesse de déplacement actuelle
+
+        int _acceleration = 1; // Accélération du personnage (Plus il court longtemps plus il accélère)
+        const float _ACCELERATION_RATE = 0.1f; // Augmentation de l'accélération
+
+        const int _JUMP_HEIGHT = 10; // Hauteur de saut
+        
+        bool _isGrounded = true; // Si le joueur est au sol
+
+        // Propriétés
         public GameObject CharacterObject { get => _characterObject; set => _characterObject = value; }
 
         KeyCode LeftKey { get => _leftKey; set => _leftKey = value; }
@@ -28,80 +39,102 @@ namespace Assets.Scenes
         int Hp { get => _hp; set => _hp = value; }
         int Strength { get => _strength; set => _strength = value; }
 
-        public Character(GameObject characterObject, KeyCode leftKey, KeyCode rightKey, KeyCode jumpKey, KeyCode attackKey, KeyCode actionKey, int hp, int strength)
-        {
-            CharacterObject = characterObject;
+        public static int DEFAULT_SPEED => _DEFAULT_SPEED;
 
+        public float CurrentSpeed { get => _currentSpeed; set => _currentSpeed = value; }
+        public int Acceleration { get => _acceleration; set => _acceleration = value; }
+
+        public static float ACCELERATION_RATE1 => _ACCELERATION_RATE;
+
+        public bool IsGrounded { get => _isGrounded; set => _isGrounded = value; }
+
+        public static int JUMP_HEIGHT => _JUMP_HEIGHT;
+
+        // Constructeur
+        protected Character(KeyCode leftKey, KeyCode rightKey, KeyCode jumpKey, KeyCode attackKey, KeyCode actionKey, int strength)
+        {
             LeftKey = leftKey;
             RightKey = rightKey;
             JumpKey = jumpKey;
             AttackKey = attackKey;
             ActionKey = actionKey;
 
-            Hp = hp;
-            Strength = strength;
+            _strength = strength;
         }
 
-        public void KeyPressed(KeyCode key)
+        // Méthodes
+        public void KeyPressed() // Quand une touche est pressée
         {
             if (IsAlive())
             {
-                if (key == LeftKey)
-                {
+                if (Input.GetKey(LeftKey))
                     Move(false);
-                }
-                else if (key == RightKey)
-                {
+
+                if (Input.GetKey(RightKey))
                     Move(true);
-                }
-                else if (key == JumpKey)
-                {
+
+                if (Input.GetKeyUp(LeftKey) || Input.GetKeyUp(RightKey))
+                    ResetSpeed();
+
+                if (Input.GetKeyDown(JumpKey))
                     Jump();
-                }
-                else if (key == AttackKey)
-                {
+
+                if (Input.GetKeyDown(AttackKey))
                     Attack();
-                }
-                else if (key == ActionKey)
-                {
+
+                if (Input.GetKeyDown(ActionKey))
                     Action();
-                }
             }
         }
 
-        void Move(bool isMovingRight)
+        void Move(bool isMovingRight) // Mouvements du joueur : Gauche / Droite
         {
             if (isMovingRight)
             {
-                CharacterObject.GetComponent<Rigidbody2D>().velocity += Vector2.right * SPEED;
+                CharacterObject.GetComponent<Rigidbody2D>().velocity += Vector2.right * CurrentSpeed * Time.deltaTime;
             }
             else
             {
-                CharacterObject.GetComponent<Rigidbody2D>().velocity += Vector2.left * SPEED;
+                CharacterObject.GetComponent<Rigidbody2D>().velocity += Vector2.left * CurrentSpeed * Time.deltaTime;
+            }
+            CurrentSpeed += Acceleration * Time.deltaTime;
+        }
+
+        void ResetSpeed() // Remise à zéro de la vitesse du personnage
+        {
+            CurrentSpeed = DEFAULT_SPEED;
+        }
+
+        void Jump() // Saut
+        {
+            if (IsGrounded)
+            {
+                IsGrounded = false;
+                CharacterObject.GetComponent<Rigidbody2D>().velocity += Vector2.up * JUMP_HEIGHT;
+            }
+
+            if (CharacterObject.GetComponent<Rigidbody2D>().velocity.y > JUMP_HEIGHT)
+            {
+                CharacterObject.GetComponent<Rigidbody2D>().velocity = new Vector2(CharacterObject.GetComponent<Rigidbody2D>().velocity.x, JUMP_HEIGHT);
             }
         }
 
-        void Jump()
+        public virtual void Attack() // Attaque (À l'épée ou à l'arc)
         {
 
         }
 
-        void Attack()
+        void Action() // Activation d'un mécanisme ou autre
         {
 
         }
 
-        void Action()
+        void Hit() // Quand le joueur est frappé par un ennemi
         {
 
         }
 
-        void Hit()
-        {
-
-        }
-
-        bool IsAlive()
+        bool IsAlive() // Si le joueur est encore en vie
         {
             return Hp > 0;
         }
